@@ -33,17 +33,17 @@ export async function action<T>({
     }
   }
 
-  let sesstion: Session | null = null;
+  let session: Session | null = null;
 
   if (authorize) {
-    sesstion = await auth();
+    session = await auth();
 
-    if (!sesstion) {
+    if (!session) {
       return new UnauthorizedError();
     }
   }
 
   await DBConnect();
 
-  return { params, sesstion };
+  return { params, session };
 }
