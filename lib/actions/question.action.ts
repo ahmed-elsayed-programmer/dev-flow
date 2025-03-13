@@ -11,7 +11,7 @@ import { AskQuestionSchema } from "@/lib/validations";
 
 export async function createQuestion(
   params: CreateQuestionParams
-): Promise<ActionResponse> {
+): Promise<ActionResponse<Question>> {
   const validationResult = await action({
     params,
     schema: AskQuestionSchema,
@@ -29,10 +29,13 @@ export async function createQuestion(
   session.startTransaction();
 
   try {
-    const [question] = await Question.create([
-      { title, content, author: userId },
-      { session },
-    ]);
+    console.log("Start create question");
+    const [question] = await Question.create(
+      [{ title, content, author: userId }],
+      { session }
+    );
+
+    console.log(question);
 
     if (!question) {
       throw new Error("Failed to create question");

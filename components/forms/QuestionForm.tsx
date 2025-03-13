@@ -2,11 +2,16 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { MDXEditorMethods } from "@mdxeditor/editor";
+import { RefreshCwIcon } from "lucide-react";
 import dynamic from "next/dynamic";
-import React, { useRef } from "react";
+import { useRouter } from "next/navigation";
+import React, { useRef, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import ROUTES from "@/constants/routes";
+import { toast } from "@/hooks/use-toast";
+import { createQuestion } from "@/lib/actions/question.action";
 import { AskQuestionSchema } from "@/lib/validations";
 
 import TagCard from "../cards/TagCard";
@@ -27,7 +32,11 @@ const Editor = dynamic(() => import("@/components/editor"), {
 });
 
 const QuestionForm = () => {
+  const router = useRouter();
   const editorRef = useRef<MDXEditorMethods>(null);
+
+  const [isPending, startTransition] = useTransition();
+
   const form = useForm<z.infer<typeof AskQuestionSchema>>({
     resolver: zodResolver(AskQuestionSchema),
     defaultValues: {
@@ -37,8 +46,28 @@ const QuestionForm = () => {
     },
   });
 
-  const handleCreateQuestion = (data: z.infer<typeof AskQuestionSchema>) => {
-    console.log(data);
+  const handleCreateQuestion = async (
+    data: z.infer<typeof AskQuestionSchema>
+  ) => {
+    startTransition(async () => {
+      console.log(data);
+
+      const result = await createQuestion(data);
+
+      if (result.success) {
+        toast({
+          title: "Success",
+          description: "Question created successfully",
+        });
+        if (result.data) router.push(ROUTES.QUESTION(result.data?._id));
+      } else {
+        toast({
+          title: `error ${result.status}`,
+          description: result.error?.message || "Something went wrong",
+          variant: "destructive",
+        });
+      }
+    });
   };
 
   const handleInputKeyDown = (
@@ -156,8 +185,6 @@ const QuestionForm = () => {
               <FormControl>
                 <div>
                   <Input
-                    required
-                    type="text"
                     className="paragraph-regular background-light700_dark300 light-border-2 text-dark300_light700 no-focus min-h-[56px]  border"
                     placeholder="Add tags..."
                     onKeyDown={(e) => handleInputKeyDown(e, field)}
@@ -189,8 +216,18 @@ const QuestionForm = () => {
         />
 
         <div className="mt-16 flex justify-end">
-          <Button className="primary-gradient w-fit !text-light-900">
-            Ask a Question
+          <Button
+            disabled={isPending}
+            className="primary-gradient w-fit !text-light-900"
+          >
+            {isPending ? (
+              <>
+                <RefreshCwIcon className="mr-2 size-4 animate-spin" />{" "}
+                <span>Submitting</span>
+              </>
+            ) : (
+              <>Ask a Question</>
+            )}
           </Button>
         </div>
       </form>
