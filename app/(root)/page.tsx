@@ -5,25 +5,24 @@ import QusetionCard from "@/components/cards/QusetionCard";
 import HomeFilter from "@/components/filter/HomeFilter";
 import LocalSearch from "@/components/search/LocalSearch";
 import { Button } from "@/components/ui/button";
-
-const questions: Question[] = [];
+import { getQuestions } from "@/lib/actions/question.action";
 
 interface SearchParams {
   searchParams: Promise<{ [key: string]: string }>;
 }
 
 const page = async ({ searchParams }: SearchParams) => {
-  const { query = "", filter = "" } = await searchParams;
+  const { query, filter, page, pageSize } = await searchParams;
 
-  const filteredQuestions = questions.filter((question) => {
-    const matchesQuery = question.title
-      .toLowerCase()
-      .includes(query.toLowerCase());
-    const matchesFilter = filter
-      ? question.tags[0].name.toLowerCase() === filter.toLowerCase()
-      : true;
-    return matchesQuery && matchesFilter;
+  const { success, data, error } = await getQuestions({
+    page: Number(page) || 1,
+    pageSize: Number(pageSize) || 10,
+    filter: filter || "",
+    query: query || "",
   });
+
+  const { questions } = data || {};
+
   return (
     <>
       <section className="flex w-full flex-col-reverse justify-between gap-4 sm:flex-row sm:items-center">
@@ -43,11 +42,25 @@ const page = async ({ searchParams }: SearchParams) => {
         otherClass=""
       />
       <HomeFilter />
-      <div className="mt-10 flex w-full flex-col gap-6">
-        {filteredQuestions.map((question) => (
-          <QusetionCard key={question._id} question={question} />
-        ))}
-      </div>
+      {success ? (
+        <div className="mt-10 flex w-full flex-col gap-6">
+          {questions && questions.length > 0 ? (
+            questions.map((question) => (
+              <QusetionCard key={question._id} question={question} />
+            ))
+          ) : (
+            <div className="mt-10 flex w-full items-center justify-center">
+              <p className="text-dark400_light700">No questions found</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="mt-10 flex w-full items-center justify-center">
+          <p className="text-dark400_light700">
+            {error?.message || "Failed to fetch questions"}{" "}
+          </p>
+        </div>
+      )}
     </>
   );
 };
