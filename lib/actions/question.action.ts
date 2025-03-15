@@ -116,7 +116,10 @@ export async function editQuestion(
     }
 
     const tagsToAdd = tags.filter(
-      (tag) => !question.tags.includes(tag.toLowerCase())
+      (tag) =>
+        !question.tags.some(
+          (t: ITagDoc) => t.name.toLowerCase() === tag.toLowerCase()
+        )
     );
     const tagsToRemove = question.tags.filter(
       (tag: ITagDoc) => !tags.includes(tag.name.toLowerCase())
